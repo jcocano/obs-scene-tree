@@ -5,7 +5,10 @@ compile_commands.json
 .DS_Store
 
 # Claude Code / AI assistant artifacts
-.claude/
+.claude/*
+# ...but share the team workflow hook + its instructions
+!.claude/settings.json
+!.claude/repo-workflow.md
 CLAUDE.md
 CLAUDE.local.md
 .mcp.json
