@@ -3,6 +3,7 @@
 [![Build](https://github.com/jcocano/obs-scene-tree/actions/workflows/push.yaml/badge.svg)](https://github.com/jcocano/obs-scene-tree/actions/workflows/push.yaml)
 [![Latest release](https://img.shields.io/github/v/release/jcocano/obs-scene-tree?include_prereleases&sort=semver&label=release)](https://github.com/jcocano/obs-scene-tree/releases)
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-ffdd00?logo=buymeacoffee&logoColor=000)](https://buymeacoffee.com/jesuscocana)
+[![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)](LICENSE)
 
 A native OBS Studio plugin that adds a **folder tree dock** for organising your
 scenes. OBS keeps scenes in a single flat list; **obs-tree** lets you group them
@@ -126,6 +127,14 @@ If this plugin is useful to you, the best ways to help are:
 - ⭐ **Star the repo** so others can find it.
 - 🐛 **Report bugs or request features** via [Issues](https://github.com/jcocano/obs-scene-tree/issues).
 - ☕ **[Buy me a coffee](https://buymeacoffee.com/jesuscocana)** to support continued development.
+
+## License
+
+Released under the **GNU General Public License v2.0** — see [LICENSE](LICENSE).
+Copyright © 2026 jcocano. This is compatible with OBS Studio / libobs (GPLv2+).
+
+This plugin was developed with the assistance of AI coding tools (used as a
+copilot); all design decisions, review and testing are the author's.
 
 ## Releasing (maintainers)
 
