@@ -6,9 +6,9 @@ compile_commands.json
 
 # Claude Code / AI assistant artifacts
 .claude/*
-# ...but share the team workflow hook + its instructions
+# ...but share the team harness: hook config + all context docs
 !.claude/settings.json
-!.claude/repo-workflow.md
+!.claude/*.md
 CLAUDE.md
 CLAUDE.local.md
 .mcp.json
