@@ -1,27 +1,62 @@
-# obs-tree
+# obs-tree — Scene Tree dock for OBS Studio
+
+[![Build](https://github.com/jcocano/obs-scene-tree/actions/workflows/push.yaml/badge.svg)](https://github.com/jcocano/obs-scene-tree/actions/workflows/push.yaml)
+[![Latest release](https://img.shields.io/github/v/release/jcocano/obs-scene-tree?include_prereleases&sort=semver&label=release)](https://github.com/jcocano/obs-scene-tree/releases)
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-ffdd00?logo=buymeacoffee&logoColor=000)](https://buymeacoffee.com/jesuscocana)
 
 A native OBS Studio plugin that adds a **folder tree dock** for organising your
-scenes. OBS keeps scenes in a single flat list; `obs-tree` lets you group them
-into nested folders and reorder everything by drag & drop, while clicking a
-scene still switches to it like the built-in list.
+scenes. OBS keeps scenes in a single flat list; **obs-tree** lets you group them
+into nested folders and reorder everything by drag & drop, while clicking a scene
+still switches to it exactly like the built-in list.
 
-Built against the current OBS frontend API (OBS 32.x, Qt 6).
+It looks and feels like a part of OBS — minimalist, native, non-disruptive.
+
+> ☕ If obs-tree makes your streaming setup tidier, you can
+> **[buy me a coffee](https://buymeacoffee.com/jesuscocana)**. It's optional, but
+> it keeps the project alive and very much appreciated.
+
+---
 
 ## Features
 
 - **Custom dock** registered with the modern `obs_frontend_add_dock_by_id` API
-  (appears under *Docks* menu).
-- **Folders** — create, rename, nest, and delete (deleting a folder re-homes its
-  contents, never your scenes).
-- **Drag & drop** to move scenes between folders and reorder them. Folders are
-  the only valid drop targets; scenes are leaves.
-- **Live sync** with OBS via the frontend event callback: scene add / remove /
-  rename and active-scene changes are reflected immediately.
-- **Stable identity** — scenes are tracked by source UUID
-  (`obs_source_get_uuid`), so renaming a scene never loses its place.
-- **Persistence** — the folder layout is stored *inside the active scene
-  collection* through the frontend save callback, so it travels with the
-  collection and is per-collection.
+  (appears under the *Docks* menu).
+- **Folders** — create, rename, nest, and delete. Deleting a folder re-homes its
+  contents; it **never** deletes your scenes.
+- **Drag & drop** to move scenes between folders and reorder them. Folders are the
+  only valid drop targets; scenes are leaves.
+- **Live sync** with OBS: scene add / remove / rename and active-scene changes are
+  reflected immediately via the frontend event callback.
+- **Stable identity** — scenes are tracked by source UUID (`obs_source_get_uuid`),
+  so renaming a scene never loses its place in the tree.
+- **Per-collection persistence** — the folder layout is stored *inside the active
+  scene collection*, so it travels with the collection.
+
+## Requirements
+
+- **OBS Studio 30 or newer** (built against the OBS 31.x / Qt 6 frontend API; works
+  on OBS 32.x).
+- Windows, macOS, or Linux.
+
+## Install (no compiling)
+
+Prebuilt packages for **Linux, Windows and macOS** are published on the
+[Releases](https://github.com/jcocano/obs-scene-tree/releases) page, built
+automatically by CI for every tagged version. Grab the file for your OS:
+
+| OS | File | How to install |
+|----|------|----------------|
+| **Windows** | `obs-tree-<ver>-windows-x64.zip` | Unzip into your OBS install dir (e.g. `C:\Program Files\obs-studio\`). |
+| **macOS** | `obs-tree-<ver>-macos-universal.pkg` | Open the installer. |
+| **Linux (Debian/Ubuntu)** | `obs-tree-<ver>-x86_64.deb` | `sudo apt install ./obs-tree-*.deb` |
+| **Linux (other)** | `obs-tree-<ver>-x86_64.tar.xz` | Extract into `~/.config/obs-studio/plugins/`. |
+
+Then **restart OBS** and enable the *Scene Tree* dock from the *Docks* menu.
+
+> **Unsigned builds.** The binaries are not code-signed yet, so the OS may warn you:
+> - **Windows** — SmartScreen prompt → *More info → Run anyway*.
+> - **macOS** — right-click the `.pkg` → *Open* the first time, or run
+>   `xattr -dr com.apple.quarantine <file>.pkg` to clear the Gatekeeper flag.
 
 ## How it works
 
@@ -48,29 +83,12 @@ save data:
 }
 ```
 
-## Install (no compiling)
-
-Prebuilt packages for **Linux, Windows and macOS** are published on the
-[Releases](https://github.com/jcocano/obs-scene-tree/releases) page, built
-automatically by CI for every tagged version. Download the file for your OS:
-
-- **Linux** — `obs-tree-<ver>-x86_64.deb` (Debian/Ubuntu: `sudo apt install ./obs-tree-*.deb`).
-  On other distros, extract the archive into `~/.config/obs-studio/plugins/`.
-- **Windows** — unzip `obs-tree-<ver>-windows-x64.zip` into your OBS install dir
-  (e.g. `C:\Program Files\obs-studio\`). The binaries are **unsigned**, so
-  Windows SmartScreen may warn — choose *More info → Run anyway*.
-- **macOS** — open `obs-tree-<ver>-macos-universal.pkg`. The package is
-  **unsigned/un-notarized**, so the first time, right-click it → *Open* (or run
-  `xattr -dr com.apple.quarantine <file>.pkg`) to bypass Gatekeeper.
-
-Then **restart OBS** and enable the *Scene Tree* dock from the *Docks* menu.
-
 ## Building from source
 
 This project uses the official
-[OBS plugin template](https://github.com/obsproject/obs-plugintemplate)
-build system. CMake presets drive per-OS builds; CI downloads pinned OBS +
-Qt6 dependencies (see `buildspec.json`).
+[OBS plugin template](https://github.com/obsproject/obs-plugintemplate) build
+system. CMake presets drive per-OS builds; CI downloads pinned OBS + Qt6
+dependencies (see `buildspec.json`).
 
 ```sh
 cmake --preset ubuntu-x86_64      # or: macos / windows-x64
@@ -79,8 +97,8 @@ cmake --build --preset ubuntu-x86_64
 
 ### Local dev loop (Linux)
 
-To iterate against your own OBS install, build the `dev-install` target — it
-copies the module + `data/` into OBS's portable plugin dir (no root needed):
+To iterate against your own OBS install, build the `dev-install` target — it copies
+the module + `data/` into OBS's portable plugin dir (no root needed):
 
 ```sh
 cmake --preset ubuntu-x86_64
@@ -96,5 +114,27 @@ Then **restart OBS** (plugins load at startup, not hot-reloaded) and enable the
 src/plugin-main.cpp       module entry: register/unregister the dock
 src/scene-tree.{hpp,cpp}  QTreeWidget subclass with drag & drop rules
 src/scene-tree-dock.*     dock UI, OBS sync, persistence
+src/icons.{hpp,cpp}       SVG icons
 data/locale/*.ini         translations (en-US, es-ES)
+.github/workflows/        cross-platform CI/CD (Linux, Windows, macOS)
 ```
+
+## Support
+
+If this plugin is useful to you, the best ways to help are:
+
+- ⭐ **Star the repo** so others can find it.
+- 🐛 **Report bugs or request features** via [Issues](https://github.com/jcocano/obs-scene-tree/issues).
+- ☕ **[Buy me a coffee](https://buymeacoffee.com/jesuscocana)** to support continued development.
+
+## Releasing (maintainers)
+
+Push a semantic-version tag to `main` and CI builds all three platforms and drafts
+a GitHub Release with the packages attached:
+
+```sh
+git tag 0.1.0 && git push origin 0.1.0
+```
+
+Review the draft under [Releases](https://github.com/jcocano/obs-scene-tree/releases)
+and publish it.
