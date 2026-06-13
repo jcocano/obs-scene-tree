@@ -48,19 +48,47 @@ save data:
 }
 ```
 
-## Building (Linux)
+## Install (no compiling)
 
-Requires `libobs` + `obs-frontend-api` dev files and Qt 6 Widgets.
+Prebuilt packages for **Linux, Windows and macOS** are published on the
+[Releases](https://github.com/jcocano/obs-scene-tree/releases) page, built
+automatically by CI for every tagged version. Download the file for your OS:
 
-```sh
-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
-cmake --build build
-cmake --install build   # -> ~/.config/obs-studio/plugins/obs-tree/
-```
+- **Linux** — `obs-tree-<ver>-x86_64.deb` (Debian/Ubuntu: `sudo apt install ./obs-tree-*.deb`).
+  On other distros, extract the archive into `~/.config/obs-studio/plugins/`.
+- **Windows** — unzip `obs-tree-<ver>-windows-x64.zip` into your OBS install dir
+  (e.g. `C:\Program Files\obs-studio\`). The binaries are **unsigned**, so
+  Windows SmartScreen may warn — choose *More info → Run anyway*.
+- **macOS** — open `obs-tree-<ver>-macos-universal.pkg`. The package is
+  **unsigned/un-notarized**, so the first time, right-click it → *Open* (or run
+  `xattr -dr com.apple.quarantine <file>.pkg`) to bypass Gatekeeper.
 
 Then **restart OBS** and enable the *Scene Tree* dock from the *Docks* menu.
 
-Override the install location with `-DOBS_PLUGIN_DESTINATION=/path`.
+## Building from source
+
+This project uses the official
+[OBS plugin template](https://github.com/obsproject/obs-plugintemplate)
+build system. CMake presets drive per-OS builds; CI downloads pinned OBS +
+Qt6 dependencies (see `buildspec.json`).
+
+```sh
+cmake --preset ubuntu-x86_64      # or: macos / windows-x64
+cmake --build --preset ubuntu-x86_64
+```
+
+### Local dev loop (Linux)
+
+To iterate against your own OBS install, build the `dev-install` target — it
+copies the module + `data/` into OBS's portable plugin dir (no root needed):
+
+```sh
+cmake --preset ubuntu-x86_64
+cmake --build build_x86_64 --target dev-install   # -> ~/.config/obs-studio/plugins/obs-tree/
+```
+
+Then **restart OBS** (plugins load at startup, not hot-reloaded) and enable the
+*Scene Tree* dock. Override the destination with `-DOBS_PLUGIN_DESTINATION=/path`.
 
 ## Project layout
 
