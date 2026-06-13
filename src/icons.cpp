@@ -156,6 +156,21 @@ void drawTrash(QPainter &p, const QColor &c)
 	p.drawPath(body);
 }
 
+void drawFunnel(QPainter &p, const QColor &c)
+{
+	p.setPen(pen(c, 8));
+	p.setBrush(Qt::NoBrush);
+	QPainterPath funnel;
+	funnel.moveTo(22, 28);
+	funnel.lineTo(78, 28);
+	funnel.lineTo(56, 54);
+	funnel.lineTo(56, 76);
+	funnel.lineTo(44, 70);
+	funnel.lineTo(44, 54);
+	funnel.closeSubpath();
+	p.drawPath(funnel);
+}
+
 void drawChevron(QPainter &p, const QColor &c, bool up)
 {
 	p.setPen(pen(c, 10));
@@ -210,6 +225,12 @@ QIcon downIcon(const QColor &color)
 	return i.isNull() ? drawnIcon(color, [](QPainter &p, const QColor &c) {
 		drawChevron(p, c, false);
 	}) : i;
+}
+
+QIcon filtersIcon(const QColor &color)
+{
+	QIcon i = obsIcon(QStringLiteral("filter.svg"), color);
+	return i.isNull() ? drawnIcon(color, drawFunnel) : i;
 }
 
 } // namespace obstree

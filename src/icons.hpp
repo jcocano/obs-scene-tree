@@ -14,5 +14,6 @@ QIcon addIcon(const QColor &color);    // OBS "plus"
 QIcon removeIcon(const QColor &color); // OBS "trash"
 QIcon upIcon(const QColor &color);     // OBS "up" chevron
 QIcon downIcon(const QColor &color);   // OBS "down" chevron
+QIcon filtersIcon(const QColor &color); // OBS "filter" funnel glyph
 
 } // namespace obstree

@@ -11,6 +11,9 @@
 #include <QSet>
 #include <QPalette>
 #include <QEvent>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QSizePolicy>
 
 #include <obs-module.h>
 
@@ -34,6 +37,10 @@ SceneTreeDock::SceneTreeDock(QWidget *parent) : QWidget(parent)
 
 	// Thin bottom toolbar, mirroring OBS's native scene/source docks.
 	toolbar = new QToolBar(this);
+	// Named so our stylesheet can target it by ID; OBS's own app-level dock
+	// rules (3 type selectors) otherwise out-specify ours and force the
+	// buttons transparent, swallowing the hover/box styling.
+	toolbar->setObjectName(QStringLiteral("obsTreeToolbar"));
 	toolbar->setIconSize(QSize(16, 16));
 	toolbar->setMovable(false);
 	toolbar->setFloatable(false);
@@ -55,13 +62,21 @@ SceneTreeDock::SceneTreeDock(QWidget *parent) : QWidget(parent)
 	removeAction->setToolTip(
 		QString::fromUtf8(obs_module_text("ObsTree.DeleteTip")));
 
-	// Light-grey separator before the reorder chevrons, mirroring the grouped
-	// clusters in OBS's native scene/source dock toolbars ([+ folder trash] |
-	// [up down]).
+	// Light-grey separator after the trash, then the filters button — the
+	// left cluster is [+ folder trash] | [filters].
 	toolbar->addSeparator();
 
-	// Reorder chevrons sit in the same left-aligned cluster as OBS's native
-	// scene/source dock toolbars (no expanding spacer).
+	filtersAction = toolbar->addAction(
+		filtersIcon, QString::fromUtf8(obs_module_text("ObsTree.Filters")));
+	filtersAction->setToolTip(
+		QString::fromUtf8(obs_module_text("ObsTree.Filters")));
+	filtersAction->setEnabled(false); // enabled once a scene is selected
+
+	// Expanding spacer pushes the reorder chevrons to the far right edge.
+	QWidget *spacer = new QWidget(toolbar);
+	spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+	toolbar->addWidget(spacer);
+
 	upAction = toolbar->addAction(
 		upIcon, QString::fromUtf8(obs_module_text("ObsTree.MoveUp")));
 	upAction->setToolTip(QString::fromUtf8(obs_module_text("ObsTree.MoveUp")));
@@ -86,6 +101,8 @@ SceneTreeDock::SceneTreeDock(QWidget *parent) : QWidget(parent)
 		&SceneTreeDock::addFolder);
 	connect(removeAction, &QAction::triggered, this,
 		&SceneTreeDock::removeSelected);
+	connect(filtersAction, &QAction::triggered, this,
+		&SceneTreeDock::openSceneFilters);
 	connect(upAction, &QAction::triggered, this, &SceneTreeDock::moveUp);
 	connect(downAction, &QAction::triggered, this, &SceneTreeDock::moveDown);
 	connect(tree, &QTreeWidget::itemSelectionChanged, this,
@@ -96,6 +113,16 @@ SceneTreeDock::SceneTreeDock(QWidget *parent) : QWidget(parent)
 		&SceneTreeDock::onItemsRearranged);
 	connect(tree, &QWidget::customContextMenuRequested, this,
 		&SceneTreeDock::showContextMenu);
+
+	// Square off the dock body's bottom corners (OBS's theme rounds them on
+	// "OBSDock > QWidget"); the toolbar below takes over the rounded bottom so
+	// the tree sits flush against it. Equal specificity to OBS's own rule, but
+	// a widget-level sheet wins ties, so this overrides cleanly.
+	setStyleSheet(QStringLiteral(
+		"OBSDock > SceneTreeDock {"
+		" border-bottom: none;"
+		" border-bottom-left-radius: 0px;"
+		" border-bottom-right-radius: 0px; }"));
 
 	obs_frontend_add_event_callback(onFrontendEvent, this);
 	obs_frontend_add_save_callback(onFrontendSave, this);
@@ -116,6 +143,7 @@ void SceneTreeDock::buildIcons()
 	removeIcon = obstree::removeIcon(color);
 	upIcon = obstree::upIcon(color);
 	downIcon = obstree::downIcon(color);
+	filtersIcon = obstree::filtersIcon(color);
 
 	if (addSceneAction)
 		addSceneAction->setIcon(addIcon);
@@ -123,6 +151,8 @@ void SceneTreeDock::buildIcons()
 		addFolderAction->setIcon(folderIcon);
 	if (removeAction)
 		removeAction->setIcon(removeIcon);
+	if (filtersAction)
+		filtersAction->setIcon(filtersIcon);
 	if (upAction)
 		upAction->setIcon(upIcon);
 	if (downAction)
@@ -163,24 +193,35 @@ void SceneTreeDock::applyToolbarStyle()
 	const QColor button = dark ? bg.darker(125) : bg.lighter(112);
 	// Light-grey divider/outline lines.
 	const QColor line = dark ? bg.lighter(160) : bg.darker(125);
-	// Hover lifts the box a touch; pressed sinks it.
-	const QColor hover = dark ? bg.darker(108) : bg.lighter(106);
-	const QColor pressed = dark ? bg.darker(145) : bg.lighter(120);
+	// Hover clearly lifts the box past the panel grey; pressed sinks it well
+	// below the resting box so the click reads.
+	const QColor hover = dark ? bg.lighter(118) : bg.darker(112);
+	const QColor pressed = dark ? bg.darker(150) : bg.lighter(124);
+	// Hover also brightens the outline, echoing OBS's native button hover.
+	const QColor hoverLine = dark ? line.lighter(135) : line.darker(125);
 
 	toolbar->setStyleSheet(
 		QStringLiteral(
-			"QToolBar { background: %1; border: none;"
-			" border-top: 1px solid %2; padding: 3px 5px;"
+			"QToolBar#obsTreeToolbar { background: %1; border: none;"
+			" border-top: 1px solid %2;"
+			" border-bottom: 1px solid %2;"
+			" border-bottom-left-radius: 4px;"
+			" border-bottom-right-radius: 4px;"
+			" padding: 3px 5px;"
 			" spacing: 4px; }"
-			"QToolBar QToolButton { background: %3;"
+			"QToolBar#obsTreeToolbar QToolButton { background: %3;"
 			" border: 1px solid %2; border-radius: 4px;"
 			" margin: 0px; padding: 4px; }"
-			"QToolBar QToolButton:hover { background: %4; }"
-			"QToolBar QToolButton:pressed { background: %5; }"
-			"QToolBar::separator { background: %2; width: 1px;"
-			" margin: 3px 4px; }")
+			"QToolBar#obsTreeToolbar QToolButton:hover {"
+			" background: %4; border-color: %6; }"
+			"QToolBar#obsTreeToolbar QToolButton:pressed {"
+			" background: %5; }"
+			"QToolBar#obsTreeToolbar QToolButton:disabled {"
+			" background: transparent; border-color: transparent; }"
+			"QToolBar#obsTreeToolbar::separator { background: %2;"
+			" width: 1px; margin: 3px 4px; }")
 			.arg(bg.name(), line.name(), button.name(),
-			     hover.name(), pressed.name()));
+			     hover.name(), pressed.name(), hoverLine.name()));
 }
 
 void SceneTreeDock::changeEvent(QEvent *event)
@@ -495,11 +536,17 @@ void SceneTreeDock::onFrontendSave(obs_data_t *save_data, bool saving, void *ptr
 
 void SceneTreeDock::onSelectionChanged()
 {
+	QTreeWidgetItem *item = tree->currentItem();
+	const bool isScene =
+		item && item->data(0, TypeRole).toInt() == SceneItem;
+
+	// Filters act on a scene; grey the toolbar button out otherwise.
+	if (filtersAction)
+		filtersAction->setEnabled(isScene);
+
 	if (suppressSelection)
 		return;
-
-	QTreeWidgetItem *item = tree->currentItem();
-	if (!item || item->data(0, TypeRole).toInt() != SceneItem)
+	if (!isScene)
 		return;
 
 	QString uuid = item->data(0, UuidRole).toString();
@@ -688,6 +735,38 @@ void SceneTreeDock::moveDown()
 	moveSelected(1);
 }
 
+void SceneTreeDock::moveToEdge(bool top)
+{
+	QTreeWidgetItem *item = tree->currentItem();
+	if (!item)
+		return;
+
+	QTreeWidgetItem *parent =
+		item->parent() ? item->parent() : tree->invisibleRootItem();
+	const int from = parent->indexOfChild(item);
+	const int to = top ? 0 : parent->childCount() - 1;
+	if (from == to)
+		return;
+
+	const bool expanded = item->isExpanded();
+	parent->takeChild(from);     // keeps the item's subtree intact
+	parent->insertChild(to, item);
+	item->setExpanded(expanded);
+
+	tree->setCurrentItem(item);
+	requestSave();
+}
+
+void SceneTreeDock::moveToTop()
+{
+	moveToEdge(true);
+}
+
+void SceneTreeDock::moveToBottom()
+{
+	moveToEdge(false);
+}
+
 void SceneTreeDock::removeSelected()
 {
 	QTreeWidgetItem *item = tree->currentItem();
@@ -737,6 +816,113 @@ void SceneTreeDock::removeSelected()
 	// The tree item is dropped by reconcile on the scene-list-changed event.
 }
 
+// ---------------------------------------------------------------------------
+// Scene actions (mirroring OBS's native scene context menu)
+// ---------------------------------------------------------------------------
+
+obs_source_t *SceneTreeDock::currentSceneSource() const
+{
+	QTreeWidgetItem *item = tree->currentItem();
+	if (!item || item->data(0, TypeRole).toInt() != SceneItem)
+		return nullptr;
+	QString uuid = item->data(0, UuidRole).toString();
+	return obs_get_source_by_uuid(uuid.toUtf8().constData());
+}
+
+void SceneTreeDock::duplicateScene()
+{
+	obs_source_t *src = currentSceneSource();
+	if (!src)
+		return;
+
+	obs_scene_t *scene = obs_scene_from_source(src);
+	if (scene) {
+		QString name = uniqueSceneName(
+			QString::fromUtf8(obs_source_get_name(src)));
+
+		// Drop the copy alongside the original in the same folder.
+		QTreeWidgetItem *item = tree->currentItem();
+		pendingSceneFolder = item ? item->parent() : nullptr;
+
+		obs_scene_t *dup = obs_scene_duplicate(
+			scene, name.toUtf8().constData(), OBS_SCENE_DUP_REFS);
+		if (dup) {
+			obs_source_t *dupsrc = obs_scene_get_source(dup);
+			if (const char *u = obs_source_get_uuid(dupsrc))
+				pendingSceneUuid = QString::fromUtf8(u);
+			obs_scene_release(dup);
+		} else {
+			pendingSceneFolder = nullptr;
+		}
+	}
+
+	obs_source_release(src);
+	reconcileScenes();
+}
+
+void SceneTreeDock::copySceneFilters()
+{
+	obs_source_t *src = currentSceneSource();
+	if (!src)
+		return;
+	if (const char *u = obs_source_get_uuid(src))
+		copiedFiltersUuid = QString::fromUtf8(u);
+	obs_source_release(src);
+}
+
+void SceneTreeDock::pasteSceneFilters()
+{
+	if (copiedFiltersUuid.isEmpty())
+		return;
+
+	obs_source_t *dst = currentSceneSource();
+	obs_source_t *src = obs_get_source_by_uuid(
+		copiedFiltersUuid.toUtf8().constData());
+	if (dst && src && dst != src)
+		obs_source_copy_filters(dst, src);
+
+	if (src)
+		obs_source_release(src);
+	if (dst)
+		obs_source_release(dst);
+
+	requestSave();
+}
+
+void SceneTreeDock::toggleMultiview()
+{
+	obs_source_t *src = currentSceneSource();
+	if (!src)
+		return;
+
+	obs_data_t *priv = obs_source_get_private_settings(src);
+	obs_data_set_default_bool(priv, "show_in_multiview", true);
+	bool show = obs_data_get_bool(priv, "show_in_multiview");
+	obs_data_set_bool(priv, "show_in_multiview", !show);
+	obs_data_release(priv);
+
+	obs_source_release(src);
+	requestSave();
+}
+
+void SceneTreeDock::screenshotScene()
+{
+	obs_source_t *src = currentSceneSource();
+	if (!src)
+		return;
+	obs_frontend_take_source_screenshot(src);
+	obs_source_release(src);
+}
+
+void SceneTreeDock::openSceneFilters()
+{
+	obs_source_t *src = currentSceneSource();
+	if (!src)
+		return;
+	obs_frontend_open_source_filters(src);
+	obs_source_release(src);
+}
+
 void SceneTreeDock::showContextMenu(const QPoint &pos)
 {
 	QTreeWidgetItem *item = tree->itemAt(pos);
@@ -747,8 +933,20 @@ void SceneTreeDock::showContextMenu(const QPoint &pos)
 
 	QMenu menu(this);
 
-	// "New folder" nests into the clicked folder, or creates at root when
-	// clicking empty space.
+	if (item && item->data(0, TypeRole).toInt() == SceneItem)
+		buildSceneMenu(menu, item);
+	else if (item)
+		buildFolderMenu(menu, item);
+	else
+		appendCommonTreeActions(menu); // empty space -> add + expand/collapse
+
+	menu.exec(tree->viewport()->mapToGlobal(pos));
+}
+
+// Shared header (New Scene / New Folder) and footer (Expand / Collapse all)
+// present in every context menu.
+void SceneTreeDock::appendCommonTreeActions(QMenu &menu)
+{
 	QAction *newScene = menu.addAction(
 		addIcon, QString::fromUtf8(obs_module_text("ObsTree.NewScene")));
 	connect(newScene, &QAction::triggered, this, &SceneTreeDock::addScene);
@@ -758,19 +956,35 @@ void SceneTreeDock::showContextMenu(const QPoint &pos)
 		QString::fromUtf8(obs_module_text("ObsTree.NewFolder")));
 	connect(newFolder, &QAction::triggered, this, &SceneTreeDock::addFolder);
 
-	if (item) {
-		menu.addSeparator();
-		QAction *rename = menu.addAction(
-			QString::fromUtf8(obs_module_text("ObsTree.Rename")));
-		connect(rename, &QAction::triggered, this,
-			&SceneTreeDock::renameSelected);
+	menu.addSeparator();
+	QAction *expand = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Expand")));
+	connect(expand, &QAction::triggered, tree, &QTreeWidget::expandAll);
+	QAction *collapse = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Collapse")));
+	connect(collapse, &QAction::triggered, tree, &QTreeWidget::collapseAll);
+}
 
-		QAction *del = menu.addAction(
-			removeIcon,
-			QString::fromUtf8(obs_module_text("ObsTree.Delete")));
-		connect(del, &QAction::triggered, this,
-			&SceneTreeDock::removeSelected);
-	}
+void SceneTreeDock::buildFolderMenu(QMenu &menu, QTreeWidgetItem *)
+{
+	QAction *newScene = menu.addAction(
+		addIcon, QString::fromUtf8(obs_module_text("ObsTree.NewScene")));
+	connect(newScene, &QAction::triggered, this, &SceneTreeDock::addScene);
+
+	QAction *newFolder = menu.addAction(
+		folderIcon,
+		QString::fromUtf8(obs_module_text("ObsTree.NewSubfolder")));
+	connect(newFolder, &QAction::triggered, this, &SceneTreeDock::addFolder);
+
+	menu.addSeparator();
+	QAction *rename = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Rename")));
+	connect(rename, &QAction::triggered, this,
+		&SceneTreeDock::renameSelected);
+
+	QAction *del = menu.addAction(
+		removeIcon, QString::fromUtf8(obs_module_text("ObsTree.Delete")));
+	connect(del, &QAction::triggered, this, &SceneTreeDock::removeSelected);
 
 	menu.addSeparator();
 	QAction *expand = menu.addAction(
@@ -779,6 +993,134 @@ void SceneTreeDock::showContextMenu(const QPoint &pos)
 	QAction *collapse = menu.addAction(
 		QString::fromUtf8(obs_module_text("ObsTree.Collapse")));
 	connect(collapse, &QAction::triggered, tree, &QTreeWidget::collapseAll);
+}
 
-	menu.exec(tree->viewport()->mapToGlobal(pos));
+// Full replica of OBS's native scene right-click menu, so the dock can stand in
+// for the stock scene list rather than offering a reduced subset.
+void SceneTreeDock::buildSceneMenu(QMenu &menu, QTreeWidgetItem *item)
+{
+	const QString sceneName = item->text(0);
+
+	QAction *newScene = menu.addAction(
+		addIcon, QString::fromUtf8(obs_module_text("ObsTree.NewScene")));
+	connect(newScene, &QAction::triggered, this, &SceneTreeDock::addScene);
+
+	QAction *newFolder = menu.addAction(
+		folderIcon,
+		QString::fromUtf8(obs_module_text("ObsTree.NewFolder")));
+	connect(newFolder, &QAction::triggered, this, &SceneTreeDock::addFolder);
+
+	QAction *dup = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Duplicate")));
+	connect(dup, &QAction::triggered, this, &SceneTreeDock::duplicateScene);
+
+	menu.addSeparator();
+
+	QAction *copyFilters = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.CopyFilters")));
+	connect(copyFilters, &QAction::triggered, this,
+		&SceneTreeDock::copySceneFilters);
+
+	QAction *pasteFilters = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.PasteFilters")));
+	pasteFilters->setEnabled(!copiedFiltersUuid.isEmpty());
+	connect(pasteFilters, &QAction::triggered, this,
+		&SceneTreeDock::pasteSceneFilters);
+
+	menu.addSeparator();
+
+	QAction *rename = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Rename")));
+	connect(rename, &QAction::triggered, this,
+		&SceneTreeDock::renameSelected);
+
+	QAction *del = menu.addAction(
+		removeIcon, QString::fromUtf8(obs_module_text("ObsTree.Delete")));
+	connect(del, &QAction::triggered, this, &SceneTreeDock::removeSelected);
+
+	menu.addSeparator();
+
+	QMenu *order = menu.addMenu(
+		QString::fromUtf8(obs_module_text("ObsTree.Order")));
+	QAction *toTop = order->addAction(
+		upIcon, QString::fromUtf8(obs_module_text("ObsTree.MoveToTop")));
+	connect(toTop, &QAction::triggered, this, &SceneTreeDock::moveToTop);
+	QAction *up = order->addAction(
+		upIcon, QString::fromUtf8(obs_module_text("ObsTree.MoveUp")));
+	connect(up, &QAction::triggered, this, &SceneTreeDock::moveUp);
+	QAction *down = order->addAction(
+		downIcon, QString::fromUtf8(obs_module_text("ObsTree.MoveDown")));
+	connect(down, &QAction::triggered, this, &SceneTreeDock::moveDown);
+	QAction *toBottom = order->addAction(
+		downIcon,
+		QString::fromUtf8(obs_module_text("ObsTree.MoveToBottom")));
+	connect(toBottom, &QAction::triggered, this,
+		&SceneTreeDock::moveToBottom);
+
+	menu.addSeparator();
+
+	QAction *multiview = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.ShowInMultiview")));
+	multiview->setCheckable(true);
+	if (obs_source_t *src = currentSceneSource()) {
+		obs_data_t *priv = obs_source_get_private_settings(src);
+		obs_data_set_default_bool(priv, "show_in_multiview", true);
+		multiview->setChecked(
+			obs_data_get_bool(priv, "show_in_multiview"));
+		obs_data_release(priv);
+		obs_source_release(src);
+	}
+	connect(multiview, &QAction::triggered, this,
+		&SceneTreeDock::toggleMultiview);
+
+	menu.addSeparator();
+
+	QAction *screenshot = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Screenshot")));
+	connect(screenshot, &QAction::triggered, this,
+		&SceneTreeDock::screenshotScene);
+
+	QAction *filters = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Filters")));
+	connect(filters, &QAction::triggered, this,
+		&SceneTreeDock::openSceneFilters);
+
+	menu.addSeparator();
+
+	// Fullscreen projector: one entry per connected monitor, exactly like
+	// OBS. Windowed projector opens a free-floating preview window.
+	QMenu *projector = menu.addMenu(QString::fromUtf8(
+		obs_module_text("ObsTree.FullscreenProjector")));
+	const QList<QScreen *> screens = QGuiApplication::screens();
+	for (int i = 0; i < screens.size(); ++i) {
+		const QRect geo = screens[i]->geometry();
+		QString label = QStringLiteral("%1: %2x%3 @ %4,%5")
+					.arg(i + 1)
+					.arg(geo.width())
+					.arg(geo.height())
+					.arg(geo.x())
+					.arg(geo.y());
+		QAction *mon = projector->addAction(label);
+		connect(mon, &QAction::triggered, this, [sceneName, i] {
+			obs_frontend_open_projector(
+				"Scene", i, nullptr,
+				sceneName.toUtf8().constData());
+		});
+	}
+
+	QAction *windowed = menu.addAction(QString::fromUtf8(
+		obs_module_text("ObsTree.WindowedProjector")));
+	connect(windowed, &QAction::triggered, this, [sceneName] {
+		obs_frontend_open_projector("Scene", -1, nullptr,
+					    sceneName.toUtf8().constData());
+	});
+
+	menu.addSeparator();
+
+	QAction *expand = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Expand")));
+	connect(expand, &QAction::triggered, tree, &QTreeWidget::expandAll);
+	QAction *collapse = menu.addAction(
+		QString::fromUtf8(obs_module_text("ObsTree.Collapse")));
+	connect(collapse, &QAction::triggered, tree, &QTreeWidget::collapseAll);
 }

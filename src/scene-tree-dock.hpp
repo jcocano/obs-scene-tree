@@ -42,6 +42,16 @@ private slots:
 	void moveDown();
 	void showContextMenu(const QPoint &pos);
 
+	// Scene-specific actions mirroring OBS's native scene context menu.
+	void duplicateScene();
+	void copySceneFilters();
+	void pasteSceneFilters();
+	void moveToTop();
+	void moveToBottom();
+	void toggleMultiview();
+	void screenshotScene();
+	void openSceneFilters();
+
 private:
 	// Frontend C callbacks -> instance methods (always on the UI thread).
 	static void onFrontendEvent(enum obs_frontend_event event, void *ptr);
@@ -78,6 +88,16 @@ private:
 	void createFolder(QTreeWidgetItem *parent);
 	QString uniqueSceneName(const QString &base) const;
 	void moveSelected(int delta); // reorder current item among its siblings
+	void moveToEdge(bool top);    // reorder to first/last among its siblings
+
+	// Returns the AddRef'd OBS source for the selected scene item, or null
+	// when the selection is not a scene. Caller must obs_source_release().
+	obs_source_t *currentSceneSource() const;
+
+	// Populate the right-click menu for each kind of clicked target.
+	void buildSceneMenu(QMenu &menu, QTreeWidgetItem *item);
+	void buildFolderMenu(QMenu &menu, QTreeWidgetItem *item);
+	void appendCommonTreeActions(QMenu &menu);
 
 	SceneTree *tree = nullptr;
 	QToolBar *toolbar = nullptr;
@@ -86,6 +106,7 @@ private:
 	QAction *addSceneAction = nullptr;
 	QAction *addFolderAction = nullptr;
 	QAction *removeAction = nullptr;
+	QAction *filtersAction = nullptr;
 	QAction *upAction = nullptr;
 	QAction *downAction = nullptr;
 
@@ -96,6 +117,7 @@ private:
 	QIcon removeIcon;
 	QIcon upIcon;
 	QIcon downIcon;
+	QIcon filtersIcon;
 
 	// Guards to suppress feedback loops while we mutate the tree ourselves.
 	bool suppressSelection = false;
@@ -104,4 +126,7 @@ private:
 	// A scene created from this dock, awaiting placement once OBS lists it.
 	QString pendingSceneUuid;
 	QTreeWidgetItem *pendingSceneFolder = nullptr;
+
+	// UUID of the scene whose filters were last copied (for Paste Filters).
+	QString copiedFiltersUuid;
 };
