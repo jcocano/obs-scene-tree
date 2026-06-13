@@ -1,8 +1,17 @@
 build/
+# OBS plugin-template build/output dirs (per-OS presets + packaging)
+build_x86_64/
+build_macos/
+build_x64/
+release/
 *.user
 .cache/
 compile_commands.json
 .DS_Store
+
+# OBS plugin-template artifacts
+*.lock.json
+/cmake/.CMakeBuildNumber
 
 # Claude Code / AI assistant artifacts
 .claude/*
