@@ -38,7 +38,7 @@
     },
     "name": "obs-tree",
     "displayName": "Scene Tree",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "author": "jcocano",
     "website": "https://github.com/jcocano/obs-scene-tree",
     "email": "jesus.cocano@gmail.com"
