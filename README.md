@@ -57,16 +57,29 @@ It looks and feels like a part of OBS — minimalist, native, non-disruptive.
 
 Prebuilt packages for **Linux, Windows and macOS** are published on the
 [Releases](https://github.com/jcocano/obs-scene-tree/releases) page, built
-automatically by CI for every tagged version. Grab the file for your OS:
+automatically by CI for every tagged version. In every case, **restart OBS**
+afterwards and enable the *Scene Tree* dock from the *Docks* menu.
 
-| OS | File | How to install |
-|----|------|----------------|
-| **Windows** | `obs-tree-<ver>-windows-x64.zip` | Unzip into your OBS install dir (e.g. `C:\Program Files\obs-studio\`). |
-| **macOS** | `obs-tree-<ver>-macos-universal.pkg` | Open the installer. |
-| **Linux (Debian/Ubuntu)** | `obs-tree-<ver>-x86_64.deb` | `sudo apt install ./obs-tree-*.deb` |
-| **Linux (other)** | `obs-tree-<ver>-x86_64.tar.xz` | Extract into `~/.config/obs-studio/plugins/`. |
+### Windows
 
-Then **restart OBS** and enable the *Scene Tree* dock from the *Docks* menu.
+- **Easiest — installer:** download `obs-tree-<ver>-windows-x64.exe` and double-click
+  it. It installs into your OBS per-user plugins folder automatically (no admin
+  rights, nothing to drag around).
+- **Manual — zip:** download `obs-tree-<ver>-windows-x64.zip`, open it, and copy the
+  `obs-tree` folder into `%AppData%\obs-studio\plugins\` so you end up with
+  `%AppData%\obs-studio\plugins\obs-tree\bin\64bit\obs-tree.dll` and the matching
+  `…\obs-tree\data\` folder. (An `INSTALL.txt` inside the zip repeats these steps.)
+
+### macOS
+
+Download `obs-tree-<ver>-macos-universal.pkg` and open it — the installer copies the
+plugin into `~/Library/Application Support/obs-studio/plugins/` for you.
+
+### Linux
+
+- **Debian/Ubuntu:** `sudo apt install ./obs-tree-<ver>-x86_64.deb`
+- **Other distros:** extract `obs-tree-<ver>-x86_64.tar.xz` into
+  `~/.config/obs-studio/plugins/`.
 
 > **Unsigned builds.** The binaries are not code-signed yet, so the OS may warn you:
 > - **Windows** — SmartScreen prompt → *More info → Run anyway*.
