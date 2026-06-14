@@ -22,6 +22,16 @@ It looks and feels like a part of OBS — minimalist, native, non-disruptive.
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/scene-tree-dock.png" alt="Scene Tree dock with nested folders" width="280">
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/scene-context-menu.png" alt="Native scene context menu" width="280">
+</p>
+
+<p align="center"><em>Nested folders with a live-highlighted active scene (left) and the native right-click menu (right).</em></p>
+
 ## Features
 
 - **Custom dock** registered with the modern `obs_frontend_add_dock_by_id` API
