@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="branding/icon-256.png" alt="Scene Tree icon" width="128" height="128">
+</p>
+
 # obs-tree — Scene Tree dock for OBS Studio
 
 [![Build](https://github.com/jcocano/obs-scene-tree/actions/workflows/push.yaml/badge.svg)](https://github.com/jcocano/obs-scene-tree/actions/workflows/push.yaml)

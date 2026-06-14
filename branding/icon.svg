@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Scene Tree — OBS folder tree dock">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3543"/>
+      <stop offset="1" stop-color="#1a1f27"/>
+    </linearGradient>
+    <linearGradient id="acc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4fd1c5"/>
+      <stop offset="1" stop-color="#3b9ae1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App tile -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bg)"/>
+  <rect x="16.5" y="16.5" width="479" height="479" rx="107.5" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="3"/>
+
+  <!-- Tree connectors: a spine drops from the folder and elbows reach each scene -->
+  <g fill="none" stroke="#7d8a9c" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 214 V 384"/>
+    <path d="M150 270 H 206"/>
+    <path d="M150 330 H 206"/>
+    <path d="M150 384 H 206"/>
+  </g>
+
+  <!-- Root folder -->
+  <path d="M118 138 h46 l20 24 h74 a16 16 0 0 1 16 16 v8 H110 v-50 a14 14 0 0 1 8 -14 z" fill="url(#acc)" fill-opacity="0.6"/>
+  <rect x="110" y="166" width="164" height="50" rx="16" fill="url(#acc)"/>
+
+  <!-- Scene rows (top one is the active scene) -->
+  <g>
+    <rect x="206" y="246" width="172" height="48" rx="15" fill="#e8edf3"/>
+    <rect x="206" y="306" width="172" height="48" rx="15" fill="#c6d0db"/>
+    <rect x="206" y="360" width="172" height="48" rx="15" fill="#c6d0db"/>
+    <path d="M230 258 v24 l21 -12 z" fill="#3b9ae1"/>
+    <circle cx="240" cy="330" r="7" fill="#7d8a9c"/>
+    <circle cx="240" cy="384" r="7" fill="#7d8a9c"/>
+  </g>
+</svg>
